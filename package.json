@@ -1,0 +1,19 @@
+{
+  "name": "ethers.js-starter",
+  "version": "1.0.0",
+  "description": "starter for ethers.js",
+  "author": "Brennan Fife",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.0.1",
+    "@truffle/hdwallet-provider": "^1.0.34",
+    "dotenv": "^8.2.0",
+    "solc": "^0.6.6"
+  }
+}
