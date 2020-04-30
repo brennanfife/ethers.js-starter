@@ -3,56 +3,59 @@ import SimpleStorageContract from "./contracts/SimpleStorage.json";
 import { ethers } from "ethers";
 
 const App = () => {
-  const [contract, setContract] = useState("");
   const [activeAddress, setActiveAddress] = useState(0);
   const [balance, setBalance] = useState(0);
+  const [contract, setContract] = useState("");
   const [storageValue, setStorageValue] = useState("");
   const [newValue, setNewValue] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        // Using local network
-        // let url = "http://localhost:8545";
-        // let provider = new ethers.providers.JsonRpcProvider(url);
+        await window.ethereum.enable();
+        const provider = new ethers.providers.Web3Provider(
+          window.web3.currentProvider
+        );
+        const wallet = provider.getSigner();
 
-        // Using test network (e.g. Rinkeby)
-        let provider = ethers.getDefaultProvider("rinkeby");
-
-        let privateKey = process.env.REACT_APP_PRIVATE_KEY;
-        let walletWithProvider = new ethers.Wallet(privateKey, provider);
-
-        // Active Address
-        let activeAddress = walletWithProvider.address;
+        const activeAddress = await wallet.getAddress();
         setActiveAddress(activeAddress);
 
-        // Balance
-        let balance = await provider.getBalance(activeAddress);
+        const balance = await wallet.getBalance();
         setBalance(ethers.utils.formatEther(balance));
 
-        let contractAddress = process.env.REACT_APP_INSTANCE_ADDRESS;
-        let instance = new ethers.Contract(
+        const currentNetwork = window.ethereum.networkVersion;
+        const contractAddress =
+          SimpleStorageContract.networks[currentNetwork].address;
+
+        const instance = new ethers.Contract(
           contractAddress,
           SimpleStorageContract.abi,
-          walletWithProvider
+          wallet
         );
         setContract(instance);
-
-        let value = await instance.functions._value();
-        setStorageValue(value);
-      } catch (error) {
-        alert(
-          `Failed to load web3, accounts, or contract. Check console for details.`
-        );
-        console.error(error);
+        getCount(instance);
+      } catch {
+        alert("Have you deployed the contracts? Are you on Rinkeby?");
       }
     })();
+  }, []);
+
+  window.ethereum.on("accountsChanged", (accounts) => {
+    console.log("accounts:", accounts);
   });
 
-  const handleSubmit = (e) => {
+  const getCount = async (contract) => {
+    let value = await contract.functions._value();
+    setStorageValue(value);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    contract.functions.setValue(newValue);
-    // send({ from: accounts[0] });
+    const tx = await contract.functions.setValue(newValue);
+    console.log("tx:", tx);
+    await tx.wait();
+    getCount(contract);
   };
 
   return (
@@ -69,7 +72,6 @@ const App = () => {
       <h3>
         <u>Stored Value</u>
       </h3>
-      <p>{storageValue}</p>
       <form onSubmit={handleSubmit}>
         <label htmlFor="changeValue"></label>
         <input
@@ -82,6 +84,7 @@ const App = () => {
           Change
         </button>
       </form>
+      <p>{storageValue}</p>
     </div>
   );
 };
